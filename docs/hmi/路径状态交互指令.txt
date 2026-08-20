@@ -1,0 +1,36 @@
+路径状态交互（Core → Qt，对齐第一工位；第二工位已迁移）
+
+一、初始化（连接后）
+  cmd.get_config → payload.config.scanPaths
+    activePathId / activePathName / activePathAlgorithm
+    paths[]：pathId, pathName, inspectionType(=algorithm), totalPoints, enabled
+  status.system → payload.scanPathProgress（断线恢复 / 基础显示）
+
+二、状态快照 status.system.scanPathProgress
+  enabledPathIds[]    本次启用路径（不含 self_check）
+  currentPathId       进行中路径；全部完成时为 0
+  currentPathName     进行中路径名
+  completedPathIds[]  已完成路径
+  pathCount           启用路径总数
+  allPathsComplete    是否全部完成
+
+三、事件（按 type 订阅）
+  event.path.started
+    pathId, pathName, pathIndex, pathCount, inspectionType, algorithm, totalPoints
+    触发：首段扫描开始，或切路后立即推送
+
+  event.path.finished
+    同上 + resultCode=1
+    触发：检测成功（Trig_Inspection / 自动检测）
+
+  event.scan_paths.all_finished
+    completedPathIds[], pathCount
+
+  event.path.progress_reset
+    reason（如 result_reset，state_machine.start）
+
+四、UI 逻辑
+  started → 进行中；finished → 已完成；progress_reset → 全重置
+  基础显示优先读 scanPathProgress.currentPathId / currentPathName
+  勿用 event.scan.* 的 segmentIndex 推断路径（每路径段号从 1 重计）
+  status.plc.activePath* 仍推送，可与 scanPathProgress 交叉校验

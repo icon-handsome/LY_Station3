@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "lastModified": "2026-08-20",
+  "activePathId": 1,
+  "scanPaths": [
+    {
+      "pathId": 1,
+      "enabled": true,
+      "name": "s3_placeholder",
+      "algorithm": "s3_placeholder",
+      "segmentKind": "external",
+      "description": "第三工位占位路径；后续按现场路径、相机数量和算法修改。",
+      "capture": {
+        "arm": { "mechEye3d": true, "hikSmartC": false, "hikCxp": true },
+        "telescopic": { "mechEye3d": false, "hikSmartC": false }
+      },
+      "devices": [
+        { "device": "arm", "totalPoints": 1 }
+      ]
+    }
+  ]
+}

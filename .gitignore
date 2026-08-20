@@ -1,0 +1,99 @@
+﻿# CMake / Build
+build/
+build-*/
+out/
+testdata/
+tools/*
+!tools/scan_tracking_dev.cmd
+first/
+.cmake/
+CMakeLists.txt.user
+
+# Local scratch / transfer helpers (not part of product)
+_xfer/
+
+# Large point-cloud / model assets（本地部署；仅跟踪 weld_measure ini 等配置）
+*.pcd
+config/weld_measure/Data/
+models/
+
+# JetBrains IDE (local)
+.idea/
+# Office temp lock files
+~$*
+*.xlsx
+*.xls
+*.pdf
+# VS Code (Personal Settings)
+.vscode/ipch/
+.vscode/*.suo
+.vscode/*.db
+# Visual Studio local state
+.vs/
+# Ignore compiled objects
+*.obj
+*.exe
+*.dll
+*.pdb
+*.lib
+# Cache
+.cache/
+compile_commands.json
+# Logs
+Log/
+logs/
+*.log
+third_party/onnxruntime/logs/
+*.log
+
+# Third party SDK bundles (ignore by default, then un-ignore each tree for IDE visibility)
+third_party/*
+!third_party/CMakeLists.txt
+!third_party/Po_Kou_Ce_Liang/
+!third_party/Po_Kou_Ce_Liang/**
+!third_party/LBN/
+!third_party/LBN/**
+!third_party/Hole/
+!third_party/Hole/**
+!third_party/Thicknessmeasurement/
+!third_party/Thicknessmeasurement/**
+!third_party/weld_measure/
+!third_party/weld_measure/**
+!third_party/thickness_measure/
+!third_party/thickness_measure/**
+!third_party/inner_surface_measure/
+!third_party/inner_surface_measure/**
+!third_party/undercut_length_measure/
+!third_party/undercut_length_measure/**
+!third_party/length_volume_measure/
+!third_party/length_volume_measure/**
+!third_party/container_total_length/
+!third_party/container_total_length/**
+third_party/Po_Kou_Ce_Liang/x64/
+# Hole: standalone VS2013 local build output only
+third_party/Hole/build_vs2013/
+third_party/Hole/*.suo
+third_party/Hole/src/*副本*
+# Thickness: standalone VS local build output only
+third_party/Thicknessmeasurement/bin/
+third_party/Thicknessmeasurement/obj/
+third_party/Thicknessmeasurement/*.sdf
+third_party/Thicknessmeasurement/*.suo
+third_party/Thicknessmeasurement/*.vcxproj.user
+third_party/Thicknessmeasurement/thickness_result.json
+# OpenCV bundle (local install, shared by LB/LBN/Po_Kou)
+third_party/opencv-3.4.3-vc14_vc15/
+third_party/opencv-3.4.3-vc14_vc15.exe
+# Local SDK bundles for deployment; source code does not require them in Git.
+third_party/LB/
+third_party/MVS/
+# MVS: IDE samples/runtime bundles (headers under Development/ are tracked)
+third_party/MVS/Applications/
+third_party/MVS/MVS/
+# MVS: .NET / VS sample build output (local compile only)
+third_party/MVS/**/obj/
+third_party/MVS/**/objnetfx/
+third_party/MVS/**/bin/
+/scripts
+/build2
+/config/container_total_length/Data/sample_cylinder.pcd.bak_placeholder_20260819_133706

@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "win-msvc2019-qtcore-ninja-debug",
+            "compileCommands": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/compile_commands.json",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "includePath": [
+                "${workspaceFolder}/modules/flow_control/include",
+                "${workspaceFolder}/modules/length_volume_measure/include",
+                "${workspaceFolder}/modules/container_total_length_measure/include",
+                "${workspaceFolder}/modules/thickness_measure/include",
+                "${workspaceFolder}/modules/inner_surface_measure/include",
+                "${workspaceFolder}/modules/weld_measure/include",
+                "${workspaceFolder}/common/include"
+            ]
+        }
+    ],
+    "version": 4
+}

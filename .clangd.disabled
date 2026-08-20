@@ -1,0 +1,3 @@
+# 已停用备份：当前项目使用仓库根目录的 .clangd。
+# 若要关闭 clangd，可删除/重命名 .clangd，并在 .vscode/settings.json 中设 clangd.enable=false，
+# 同时将 C_Cpp.intelliSenseEngine 改回 Default。

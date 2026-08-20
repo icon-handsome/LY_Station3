@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug scan-tracking",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app/scan-tracking.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app",
+      "env": {
+        "PATH": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app/mech_eye_api;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app/ThirdParty;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-debug/app/hik_mvs_runtime;C:/Qt/5.15.2/msvc2019_64/bin;${workspaceFolder}/third_party/Mech-Eye SDK-2.5.4/API/dll;${workspaceFolder}/third_party/Mech-Eye SDK-2.5.4/API/dll_debug;${env:PATH}"
+      },
+      "stdio": "integratedTerminal",
+      "preLaunchTask": "Build (Ninja Debug)"
+    },
+    {
+      "name": "Release scan-tracking",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app/scan-tracking.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app",
+      "env": {
+        "PATH": "${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app/mech_eye_api;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app/ThirdParty;${workspaceFolder}/build/win-msvc2019-qtcore-ninja-release/app/hik_mvs_runtime;C:/Qt/5.15.2/msvc2019_64/bin;${workspaceFolder}/third_party/Mech-Eye SDK-2.5.4/API/dll;${env:PATH}"
+      },
+      "stdio": "integratedTerminal",
+      "preLaunchTask": "Build (Ninja Release)"
+    },
+    {
+      "name": "Attach to scan-tracking",
+      "type": "lldb",
+      "request": "attach",
+      "pid": "${command:pickMyProcess}",
+      "stdio": "integratedTerminal"
+    }
+  ]
+}
