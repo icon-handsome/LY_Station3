@@ -43,10 +43,10 @@ public:
     bool isHikCxpAConnected() const;
     bool isHikCxpBConnected() const;
 
-    /// 组合采集通道开关（路径级矩阵解析后传入）。
+    /// 组合采集通道开关（路径/点级矩阵解析后传入）。
     /// 真实 CXP 采图：与全局 hikCxpEnabled 取与；hikCxpBypassOk=true 时不采 CXP、不因 CXP 失败阻断。
     struct BundleCaptureOptions {
-        bool useMechEye = true;    ///< 本轮仍强制需要 Mech 服务；预留按路径关闭
+        bool useMechEye = true;    ///< 是否采梅卡 3D；可与 CXP/智能 C 任意组合
         bool useHikCxp = true;     ///< 是否采 CXP 双目（伸缩杆侧会被忽略）
         bool useHikSmartC = true;  ///< 是否触发海康智能相机 C
     };
@@ -95,6 +95,7 @@ private:
         bool hikADone = false;
         bool hikBDone = false;
         bool hikCDone = false;
+        bool useMechEye = false;
         bool useCxp = false;
         bool useHikCameraC = false;
         bool hikCTriggerOnly = false;

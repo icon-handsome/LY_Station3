@@ -1,21 +1,85 @@
 {
-  "version": "1.0",
-  "lastModified": "2026-08-20",
+  "version": "1.1",
+  "lastModified": "2026-09-16",
   "activePathId": 1,
   "scanPaths": [
     {
       "pathId": 1,
       "enabled": true,
-      "name": "s3_placeholder",
-      "algorithm": "s3_placeholder",
+      "name": "s3_path1_hik_smart",
+      "algorithm": "code_read",
       "segmentKind": "external",
-      "description": "第三工位占位路径；后续按现场路径、相机数量和算法修改。",
+      "description": "第1条路径：1 个扫描点，海康智能相机 C（编号识别）。",
       "capture": {
-        "arm": { "mechEye3d": true, "hikSmartC": false, "hikCxp": true },
+        "arm": { "mechEye3d": false, "hikSmartC": true, "hikCxp": false },
         "telescopic": { "mechEye3d": false, "hikSmartC": false }
       },
       "devices": [
         { "device": "arm", "totalPoints": 1 }
+      ]
+    },
+    {
+      "pathId": 2,
+      "enabled": true,
+      "name": "s3_path2_mech",
+      "algorithm": "s3_mech_40",
+      "segmentKind": "external",
+      "description": "第2条路径：40 个扫描点，全部梅卡 3D。",
+      "capture": {
+        "arm": { "mechEye3d": true, "hikSmartC": false, "hikCxp": false },
+        "telescopic": { "mechEye3d": false, "hikSmartC": false }
+      },
+      "devices": [
+        { "device": "arm", "totalPoints": 40 }
+      ]
+    },
+    {
+      "pathId": 3,
+      "enabled": true,
+      "name": "s3_path3_hik_smart",
+      "algorithm": "s3_hik_112",
+      "segmentKind": "external",
+      "description": "第3条路径：112 个扫描点均采海康智能 C；下列点额外采梅卡：1/6/7/12/13/18/19/24、25/30/31/36/37/42/43/48、49/54/55/60/61/66/67/72、73/78/79/84/85/90/91/96。",
+      "capture": {
+        "arm": { "mechEye3d": false, "hikSmartC": true, "hikCxp": false },
+        "telescopic": { "mechEye3d": false, "hikSmartC": false }
+      },
+      "devices": [
+        { "device": "arm", "totalPoints": 112 }
+      ],
+      "points": [
+        { "pointIndex": 1, "capture": { "mechEye3d": true } },
+        { "pointIndex": 6, "capture": { "mechEye3d": true } },
+        { "pointIndex": 7, "capture": { "mechEye3d": true } },
+        { "pointIndex": 12, "capture": { "mechEye3d": true } },
+        { "pointIndex": 13, "capture": { "mechEye3d": true } },
+        { "pointIndex": 18, "capture": { "mechEye3d": true } },
+        { "pointIndex": 19, "capture": { "mechEye3d": true } },
+        { "pointIndex": 24, "capture": { "mechEye3d": true } },
+        { "pointIndex": 25, "capture": { "mechEye3d": true } },
+        { "pointIndex": 30, "capture": { "mechEye3d": true } },
+        { "pointIndex": 31, "capture": { "mechEye3d": true } },
+        { "pointIndex": 36, "capture": { "mechEye3d": true } },
+        { "pointIndex": 37, "capture": { "mechEye3d": true } },
+        { "pointIndex": 42, "capture": { "mechEye3d": true } },
+        { "pointIndex": 43, "capture": { "mechEye3d": true } },
+        { "pointIndex": 48, "capture": { "mechEye3d": true } },
+        { "pointIndex": 49, "capture": { "mechEye3d": true } },
+        { "pointIndex": 54, "capture": { "mechEye3d": true } },
+        { "pointIndex": 55, "capture": { "mechEye3d": true } },
+        { "pointIndex": 60, "capture": { "mechEye3d": true } },
+        { "pointIndex": 61, "capture": { "mechEye3d": true } },
+        { "pointIndex": 66, "capture": { "mechEye3d": true } },
+        { "pointIndex": 67, "capture": { "mechEye3d": true } },
+        { "pointIndex": 72, "capture": { "mechEye3d": true } },
+        { "pointIndex": 73, "capture": { "mechEye3d": true } },
+        { "pointIndex": 78, "capture": { "mechEye3d": true } },
+        { "pointIndex": 79, "capture": { "mechEye3d": true } },
+        { "pointIndex": 84, "capture": { "mechEye3d": true } },
+        { "pointIndex": 85, "capture": { "mechEye3d": true } },
+        { "pointIndex": 90, "capture": { "mechEye3d": true } },
+        { "pointIndex": 91, "capture": { "mechEye3d": true } },
+        { "pointIndex": 96, "capture": { "mechEye3d": true } }
       ]
     }
   ]

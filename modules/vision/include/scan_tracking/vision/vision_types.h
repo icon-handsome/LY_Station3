@@ -182,10 +182,18 @@ struct MultiCameraCaptureBundle {
         return !request.hikCameraCIp.trimmed().isEmpty();
     }
 
+    /// 本段是否发起了梅卡采集（cameraKey 非空）。
+    bool mechParticipated() const
+    {
+        return !request.mechEyeCameraKey.trimmed().isEmpty();
+    }
+
     bool allCamerasOk() const
     {
-        const bool mechOk = mechEyeResult.success();
-        if (!mechOk) {
+        if (mechParticipated() && !mechEyeResult.success()) {
+            return false;
+        }
+        if (!mechParticipated() && !cxpParticipated() && !hikCParticipated()) {
             return false;
         }
         if (cxpParticipated() &&
@@ -202,7 +210,7 @@ struct MultiCameraCaptureBundle {
         return true;
     }
 
-    /// 梅卡成功，且已参与的 CXP / 海康 C 均 OK。LB 成败不计入（便于排查与原始云落盘）。
+    /// 已参与通道均 OK（梅卡未参与时不要求点云）。LB 成败不计入。
     bool success() const
     {
         return allCamerasOk();
@@ -234,12 +242,15 @@ struct MultiCameraCaptureBundle {
         } else {
             hikPart = QStringLiteral("无");
         }
+        const QString mechPart = mechParticipated()
+                                     ? flag(mechEyeResult.success())
+                                     : QStringLiteral("跳过");
         return QStringLiteral(
                    "组合采集 requestId=%1 taskId=%2 段号=%3 梅卡=%4 海康=%5 LB=%6")
             .arg(request.requestId)
             .arg(request.taskId)
             .arg(request.segmentIndex)
-            .arg(flag(mechEyeResult.success()))
+            .arg(mechPart)
             .arg(hikPart)
             .arg(lbFlag(lbPoseResult));
     }

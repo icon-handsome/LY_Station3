@@ -441,6 +441,30 @@ PathDeviceCaptureConfig ConfigManager::resolvePathDeviceCapture(
     return cfg;
 }
 
+PathDeviceCaptureConfig ConfigManager::resolveDeviceCaptureForPoint(
+    const ScanPathConfig& path,
+    ScanDeviceKind device,
+    int localIndex)
+{
+    PathDeviceCaptureConfig cfg = resolvePathDeviceCapture(path, device);
+    for (const auto& point : path.points) {
+        if (point.pointIndex != localIndex || !point.capture.configured) {
+            continue;
+        }
+        if (point.capture.hasMechEye3d) {
+            cfg.mechEye3d = point.capture.mechEye3d;
+        }
+        if (point.capture.hasHikSmartC) {
+            cfg.hikSmartC = point.capture.hikSmartC;
+        }
+        if (point.capture.hasHikCxp) {
+            cfg.hikCxp = point.capture.hikCxp;
+        }
+        break;
+    }
+    return cfg;
+}
+
 PathDeviceCaptureConfig ConfigManager::activeDeviceCapture(ScanDeviceKind device) const
 {
     if (const ScanPathConfig* path = activeScanPath()) {
@@ -451,6 +475,16 @@ PathDeviceCaptureConfig ConfigManager::activeDeviceCapture(ScanDeviceKind device
     cfg.hikSmartC = true;
     cfg.hikCxp = (device == ScanDeviceKind::Arm);
     return cfg;
+}
+
+PathDeviceCaptureConfig ConfigManager::activeDeviceCaptureForPoint(
+    ScanDeviceKind device,
+    int localIndex) const
+{
+    if (const ScanPathConfig* path = activeScanPath()) {
+        return resolveDeviceCaptureForPoint(*path, device, localIndex);
+    }
+    return activeDeviceCapture(device);
 }
 
 QString ConfigManager::activePathAlgorithm() const
@@ -1109,6 +1143,7 @@ void ConfigManager::load(const QString& filePath)
  * - devices[]：{ device: "arm"|"telescopic", totalPoints: N }
  * - 或扁平字段 armPointCount / telescopicPointCount
  * - points[].purpose：可选，供后续算法路由
+ * - points[].capture：可选稀疏覆盖，仅改写显式字段（mechEye3d/hikSmartC/hikCxp）
  *
  * 兼容旧格式：
  * - points[] + totalPoints + 可选 segmentKind
@@ -1237,6 +1272,26 @@ void ConfigManager::loadScanPathsConfig(const QString& jsonFilePath)
             pointConfig.pointIndex = pointObj.value("pointIndex").toInt();
             pointConfig.needRotation = pointObj.value("needRotation").toBool(false);
             pointConfig.purpose = pointObj.value("purpose").toString();
+
+            const QJsonObject pointCaptureObj = pointObj.value("capture").toObject();
+            if (!pointCaptureObj.isEmpty()) {
+                pointConfig.capture.configured = true;
+                if (pointCaptureObj.contains(QLatin1String("mechEye3d"))) {
+                    pointConfig.capture.hasMechEye3d = true;
+                    pointConfig.capture.mechEye3d =
+                        pointCaptureObj.value(QLatin1String("mechEye3d")).toBool(false);
+                }
+                if (pointCaptureObj.contains(QLatin1String("hikSmartC"))) {
+                    pointConfig.capture.hasHikSmartC = true;
+                    pointConfig.capture.hikSmartC =
+                        pointCaptureObj.value(QLatin1String("hikSmartC")).toBool(false);
+                }
+                if (pointCaptureObj.contains(QLatin1String("hikCxp"))) {
+                    pointConfig.capture.hasHikCxp = true;
+                    pointConfig.capture.hikCxp =
+                        pointCaptureObj.value(QLatin1String("hikCxp")).toBool(false);
+                }
+            }
 
             pathConfig.points.push_back(pointConfig);
         }
@@ -1380,12 +1435,15 @@ bool ConfigManager::validateScanPathsConfig(QString* errorMessage) const
             return false;
         }
 
-        if (!path.points.empty() &&
-            path.armPointCount + path.telescopicPointCount == static_cast<int>(path.points.size())) {
+        if (!path.points.empty()) {
             // 显式点表：校验 pointIndex（活跃或 enabled 路径）
+            // 配额模式下允许稀疏 points[]（仅覆盖相机/用途），不必与 totalPoints 等长。
             if (!mustHaveQuota && m_scanPathsConfig.activePathId > 0) {
                 continue;
             }
+            const int armMax = path.armPointCount;
+            const int telMax = path.telescopicPointCount;
+            const bool hasDeviceQuota = (armMax + telMax) > 0;
             std::vector<int> seen;
             for (const auto& point : path.points) {
                 if (point.pointIndex <= 0) {
@@ -1395,6 +1453,22 @@ bool ConfigManager::validateScanPathsConfig(QString* errorMessage) const
                                             .arg(point.pointIndex);
                     }
                     return false;
+                }
+                if (hasDeviceQuota) {
+                    const bool inArm = armMax > 0 && point.pointIndex <= armMax;
+                    const bool inTel = telMax > 0 && point.pointIndex <= telMax;
+                    // 稀疏覆盖表按本地段号解释；臂/伸缩杆配额各自独立，故任一侧落在范围内即可。
+                    if (!inArm && !inTel) {
+                        if (errorMessage) {
+                            *errorMessage =
+                                QStringLiteral("路径 %1 点位 %2 超出设备配额（臂 1..%3 / 伸缩杆 1..%4）")
+                                    .arg(path.pathId)
+                                    .arg(point.pointIndex)
+                                    .arg(armMax)
+                                    .arg(telMax);
+                        }
+                        return false;
+                    }
                 }
                 if (std::find(seen.begin(), seen.end(), point.pointIndex) != seen.end()) {
                     if (errorMessage) {

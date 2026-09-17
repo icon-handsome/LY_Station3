@@ -402,22 +402,6 @@ quint64 VisionPipelineService::requestCaptureBundle(
     scan_tracking::mech_eye::MechEyeService* mechService =
         telescopicConcurrentHikC ? m_mechEyeTelescopicService : m_mechEyeArmService;
 
-    if (options.useMechEye && mechService == nullptr) {
-        emit fatalError(
-            VisionErrorCode::InvalidConfig,
-            telescopicConcurrentHikC
-                ? QStringLiteral("伸缩杆梅卡相机服务不可用。")
-                : QStringLiteral("机械臂梅卡相机服务不可用。"));
-        return 0;
-    }
-    if (!options.useMechEye) {
-        // 本轮段扫仍依赖 Mech；关闭 Mech 的路径（如编号）应走专用采集入口。
-        emit fatalError(
-            VisionErrorCode::InvalidConfig,
-            QStringLiteral("组合采集当前仍需要梅卡 3D；请使用路径专用采集入口。"));
-        return 0;
-    }
-
     // 机械臂：可并行 CXP（LB）+ 海康 C；伸缩杆：仅海康 C。
     // hikCxpBypassOk：路径仍正常进（梅卡/海康C照采），仅不采 CXP、不把 CXP 计入成败、不报采图失败。
     const bool pathWantsCxp = options.useHikCxp && !telescopicConcurrentHikC;
@@ -427,6 +411,22 @@ quint64 VisionPipelineService::requestCaptureBundle(
         m_hikCameraAService != nullptr && m_hikCameraBService != nullptr;
     const bool useHikCameraC =
         options.useHikSmartC && m_hikCameraCController != nullptr;
+    const bool useMechEye = options.useMechEye;
+
+    if (!useMechEye && !useCxp && !useHikCameraC) {
+        emit fatalError(
+            VisionErrorCode::InvalidConfig,
+            QStringLiteral("组合采集无可用通道（梅卡/CXP/智能C 均未启用或不可用）。"));
+        return 0;
+    }
+    if (useMechEye && mechService == nullptr) {
+        emit fatalError(
+            VisionErrorCode::InvalidConfig,
+            telescopicConcurrentHikC
+                ? QStringLiteral("伸缩杆梅卡相机服务不可用。")
+                : QStringLiteral("机械臂梅卡相机服务不可用。"));
+        return 0;
+    }
 
     MultiCameraCaptureRequest request;
     request.requestId = m_nextRequestId++;
@@ -434,10 +434,13 @@ quint64 VisionPipelineService::requestCaptureBundle(
     request.segmentIndex = segmentIndex;
     request.mechCaptureMode = mechCaptureMode;
     request.needMechEye2D =
+        useMechEye &&
         mechCaptureMode == scan_tracking::mech_eye::CaptureMode::Capture2DAnd3D;
-    request.mechEyeCameraKey = deviceGroup.mechEye.cameraKey;
-    request.mechEyeTimeoutMs =
-        m_config.mechCaptureTimeoutMs > 0 ? m_config.mechCaptureTimeoutMs : 5000;
+    if (useMechEye) {
+        request.mechEyeCameraKey = deviceGroup.mechEye.cameraKey;
+        request.mechEyeTimeoutMs =
+            m_config.mechCaptureTimeoutMs > 0 ? m_config.mechCaptureTimeoutMs : 5000;
+    }
     if (useHikCameraC) {
         request.hikCameraCIp = deviceGroup.hikCameraC.ipAddress;
     }
@@ -451,13 +454,17 @@ quint64 VisionPipelineService::requestCaptureBundle(
 
     PendingCaptureContext pending;
     pending.active = true;
+    pending.useMechEye = useMechEye;
     pending.useCxp = useCxp;
     pending.useHikCameraC = useHikCameraC;
     pending.hikCTriggerOnly = useHikCameraC;
     pending.hikCameraCIp = useHikCameraC ? deviceGroup.hikCameraC.ipAddress.trimmed() : QString();
-    pending.activeMechService = mechService;
+    pending.activeMechService = useMechEye ? mechService : nullptr;
     pending.bundle.request = request;
     // 未参与的通道视为已完成，避免 finishBundleIfReady 死等。
+    if (!useMechEye) {
+        pending.mechDone = true;
+    }
     if (!useCxp) {
         pending.hikADone = true;
         pending.hikBDone = true;
@@ -472,19 +479,35 @@ quint64 VisionPipelineService::requestCaptureBundle(
         pending.hikCDone = true;
     }
 
-    pending.mechRequestId = mechService->requestCapture(
-        request.mechEyeCameraKey,
-        mechCaptureMode,
-        request.mechEyeTimeoutMs);
-    if (pending.mechRequestId == 0) {
-        emit fatalError(VisionErrorCode::CaptureRejected, QStringLiteral("启动 Mech-Eye 采集失败。"));
-        return 0;
+    auto startHikChannels = [this]() {
+        if (m_pending.useCxp) {
+            startPendingHikCapture();
+        }
+        if (m_pending.useHikCameraC) {
+            startPendingHikCameraCCapture();
+        }
+        if (!m_pending.useCxp && !m_pending.useHikCameraC) {
+            finishBundleIfReady();
+        }
+    };
+
+    if (useMechEye) {
+        pending.mechRequestId = mechService->requestCapture(
+            request.mechEyeCameraKey,
+            mechCaptureMode,
+            request.mechEyeTimeoutMs);
+        if (pending.mechRequestId == 0) {
+            emit fatalError(VisionErrorCode::CaptureRejected, QStringLiteral("启动 Mech-Eye 采集失败。"));
+            return 0;
+        }
     }
 
     m_pending = pending;
 
     QStringList parts;
-    parts << QStringLiteral("梅卡");
+    if (useMechEye) {
+        parts << QStringLiteral("梅卡");
+    }
     if (useCxp) {
         parts << QStringLiteral("CXP");
     } else if (skipCxpCapture) {
@@ -493,19 +516,31 @@ quint64 VisionPipelineService::requestCaptureBundle(
     if (useHikCameraC) {
         parts << QStringLiteral("海康C");
     }
-    setState(
-        VisionPipelineState::Capturing,
-        QStringLiteral("梅卡采集已启动（%1；海康通道将在梅卡完成后延迟 %2ms）")
-            .arg(parts.join(QStringLiteral("+")))
-            .arg(kMechToHikCaptureDelayMs));
+    if (parts.isEmpty()) {
+        parts << QStringLiteral("无相机");
+    }
+
+    if (useMechEye) {
+        setState(
+            VisionPipelineState::Capturing,
+            QStringLiteral("梅卡采集已启动（%1；海康通道将在梅卡完成后延迟 %2ms）")
+                .arg(parts.join(QStringLiteral("+")))
+                .arg(kMechToHikCaptureDelayMs));
+    } else {
+        setState(
+            VisionPipelineState::Capturing,
+            QStringLiteral("无梅卡组合采集已启动（%1）").arg(parts.join(QStringLiteral("+"))));
+        startHikChannels();
+    }
     qInfo(LOG_VISION_PIPELINE).noquote()
         << QStringLiteral("[VisionPipeline] 组合采集 requestId=%1 segment=%2 device=%3 "
-                          "channels=%4 pathOpts(cxp=%5 smart=%6) cxpSkipCapture=%7")
+                          "channels=%4 pathOpts(mech=%5 cxp=%6 smart=%7) cxpSkipCapture=%8")
                .arg(request.requestId)
                .arg(segmentIndex)
                .arg(telescopicConcurrentHikC ? QStringLiteral("telescopic")
                                              : QStringLiteral("arm"))
                .arg(parts.join(QLatin1Char('+')))
+               .arg(options.useMechEye)
                .arg(options.useHikCxp)
                .arg(options.useHikSmartC)
                .arg(skipCxpCapture);

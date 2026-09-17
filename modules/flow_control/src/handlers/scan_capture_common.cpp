@@ -49,16 +49,14 @@ void executeConfiguredScanCapture(TaskHandlerContext& ctx, const char* triggerLa
     }
 
     const common::PathDeviceCaptureConfig captureCfg =
-        configMgr != nullptr ? configMgr->activeDeviceCapture(device)
+        configMgr != nullptr ? configMgr->activeDeviceCaptureForPoint(device, localIndex)
                              : common::PathDeviceCaptureConfig{};
     const QString algorithm =
         configMgr != nullptr ? configMgr->activePathAlgorithm() : QString();
 
-    // PLC 不便改触发时：编号路径仍可能发 Trig_ScanSegment。
-    // 无梅卡、仅智能相机的路径改走专用 OCR，回写仍用段扫 Ack/Res。
-    const bool redirectToCodeRead =
-        algorithm == QLatin1String("code_read") ||
-        (!captureCfg.mechEye3d && captureCfg.hikSmartC && !captureCfg.hikCxp);
+    // 仅编号识别算法改走专用 OCR（回写仍用段扫 Ack/Res）。
+    // Path3 等「仅海康智能 C / 智能 C+梅卡」的表面扫描不得按相机矩阵误跳 OCR。
+    const bool redirectToCodeRead = algorithm == QLatin1String("code_read");
     if (redirectToCodeRead) {
         const int pathId = configMgr != nullptr ? configMgr->activePathId() : 0;
         qInfo(LOG_FLOW).noquote()

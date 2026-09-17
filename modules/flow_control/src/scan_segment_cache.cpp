@@ -360,7 +360,7 @@ bool persistScanSegmentBundle(
         }
     }
 
-    if (bundle.mechEyeResult.success()) {
+    if (bundle.mechParticipated() && bundle.mechEyeResult.success()) {
         const bool textureValid = bundle.mechEyeResult.texture2D.isValid();
         qInfo(LOG_SCAN_CACHE).noquote()
             << QStringLiteral("%1 段 %2 开始写 Mech 纹理 PNG valid=")

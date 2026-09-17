@@ -170,11 +170,24 @@ enum class ScanDeviceKind {
     Telescopic = 1,  ///< Trig_TelescopicScan → 伸缩杆相机组
 };
 
+/// 点位级相机开关覆盖（仅覆盖 JSON 中显式写出的字段；未写字段沿用路径级 capture）。
+struct ScanPointCaptureOverride {
+    bool configured = false;   ///< points[].capture 是否存在
+    bool hasMechEye3d = false;
+    bool mechEye3d = false;
+    bool hasHikSmartC = false;
+    bool hikSmartC = false;
+    bool hasHikCxp = false;
+    bool hikCxp = false;
+};
+
 /// 扫描路径中的单个点位定义（旧版 points[]；新版可省略，改用设备配额）。
+/// 配额模式下也可只列出需覆盖相机/用途的点，不必写满 totalPoints。
 struct ScanPointConfig {
     int pointIndex = 0;           ///< 设备内本地段号（1..N）；臂读 AO47/40015，伸缩杆读 AO48/40016
     bool needRotation = false;    ///< true → 预留彩色/2D 扩展；Orbbec 主流程采集深度+点云
     QString purpose;              ///< 点位用途：thickness / inner_surface 等；空表示未指定
+    ScanPointCaptureOverride capture;  ///< 可选：覆盖路径级相机矩阵中的部分开关
 };
 
 /// 一条扫描路径下某设备的配额（二维：设备 × 本地索引上限）。
@@ -185,7 +198,7 @@ struct ScanDeviceQuota {
 
 /// 某设备组在本路径上的相机启用矩阵（来自 scan_paths JSON 的 capture.arm / capture.telescopic）。
 struct PathDeviceCaptureConfig {
-    bool mechEye3d = true;   ///< 梅卡 3D（本轮管道仍始终采 Mech；供后续按路径关闭）
+    bool mechEye3d = true;   ///< 梅卡 3D
     bool hikSmartC = true;   ///< 海康智能相机 C
     bool hikCxp = false;     ///< 海康 CXP 双目（仅机械臂有意义；伸缩杆忽略）
 };
@@ -305,8 +318,19 @@ public:
         const ScanPathConfig& path,
         ScanDeviceKind device);
 
+    /// 路径级相机开关 + 可选点级覆盖（points[].capture 仅覆盖显式字段）。
+    static PathDeviceCaptureConfig resolveDeviceCaptureForPoint(
+        const ScanPathConfig& path,
+        ScanDeviceKind device,
+        int localIndex);
+
     /// 活跃路径在指定设备组上的相机开关；无活跃路径时返回旧管道默认（臂：3D+智能+CXP）。
     PathDeviceCaptureConfig activeDeviceCapture(ScanDeviceKind device) const;
+
+    /// 活跃路径在指定设备组、本地段号上的相机开关（含点级覆盖）。
+    PathDeviceCaptureConfig activeDeviceCaptureForPoint(
+        ScanDeviceKind device,
+        int localIndex) const;
 
     /// 按全局段号（pointIndex）在活跃路径（或已启用路径）中查找点位；未找到返回 nullptr。
     /// @note 新版双设备配额模式下，优先用 isValidDeviceLocalIndex。
